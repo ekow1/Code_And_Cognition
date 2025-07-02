@@ -1,4 +1,4 @@
-version: '3.8'
+
 
 services:
   app:
@@ -24,8 +24,8 @@ services:
       - "8081:80"
       - "8444:443"
     volumes:
-      - ./nginx/nginx-subdomain.conf:/etc/nginx/nginx.conf:ro
-      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - ./nginx/nginx-initial.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
       - nginx_logs:/var/log/nginx
     depends_on:
       - app

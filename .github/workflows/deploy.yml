@@ -124,19 +124,16 @@ jobs:
           # Create SSL directory if it doesn't exist
           mkdir -p nginx/ssl
           
-          # Check if Let's Encrypt certificate exists, if not create self-signed
-          if [ ! -f "/etc/letsencrypt/live/codecognition.ekowenu.site/fullchain.pem" ]; then
-            echo "🔒 Creating self-signed SSL certificate for initial setup..."
-            mkdir -p nginx/ssl
-            sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-              -keyout nginx/ssl/key.pem \
-              -out nginx/ssl/cert.pem \
-              -subj "/C=US/ST=State/L=City/O=Organization/CN=codecognition.ekowenu.site"
-            sudo chown $USER:$USER nginx/ssl/*
-            echo "⚠️ Using self-signed certificate. For production, run: sudo certbot certonly --standalone -d codecognition.ekowenu.site"
-          else
-            echo "✅ Let's Encrypt certificate found!"
-          fi
+          # Create self-signed SSL certificate for initial setup
+          echo "🔒 Creating self-signed SSL certificate for initial setup..."
+          mkdir -p nginx/ssl
+          sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+            -keyout nginx/ssl/key.pem \
+            -out nginx/ssl/cert.pem \
+            -subj "/C=US/ST=State/L=City/O=Organization/CN=codecognition.ekowenu.site"
+          sudo chown $USER:$USER nginx/ssl/*
+          echo "✅ Self-signed certificate created"
+          echo "⚠️ For production, run: sudo certbot certonly --standalone -d codecognition.ekowenu.site"
           
           # Create .env file if it doesn't exist
           if [ ! -f ".env" ]; then
@@ -145,24 +142,52 @@ jobs:
           fi
           
           # Update .env with GitHub secrets if they exist
+          echo "🔧 Updating environment variables..."
+          
+          # MongoDB URI - clean and validate
           if [ ! -z "${{ secrets.MONGO_URI }}" ]; then
-            sed -i "s|MONGO_URI=.*|MONGO_URI=${{ secrets.MONGO_URI }}|g" .env
+            echo "📝 Setting MongoDB URI..."
+            # Clean the URI by removing any trailing spaces or newlines
+            CLEAN_MONGO_URI=$(echo "${{ secrets.MONGO_URI }}" | tr -d '\n\r' | sed 's/[[:space:]]*$//')
+            sed -i "s|MONGO_URI=.*|MONGO_URI=$CLEAN_MONGO_URI|g" .env
+            echo "✅ MongoDB URI updated"
+          else
+            echo "⚠️ No MongoDB URI provided, using default"
           fi
+          
           if [ ! -z "${{ secrets.MONGO_DB }}" ]; then
+            echo "📝 Setting MongoDB database name..."
             sed -i "s|MONGO_DB=.*|MONGO_DB=${{ secrets.MONGO_DB }}|g" .env
           fi
+          
           if [ ! -z "${{ secrets.JWT_SECRET_KEY }}" ]; then
+            echo "📝 Setting JWT secret..."
             sed -i "s|JWT_SECRET_KEY=.*|JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}|g" .env
           else
             # Generate a default JWT secret if not provided
             echo "🔑 Generating default JWT secret..."
             sed -i "s|JWT_SECRET_KEY=.*|JWT_SECRET_KEY=default-secret-key-change-in-production-$(date +%s)|g" .env
           fi
+          
           if [ ! -z "${{ secrets.SUPABASE_URL }}" ]; then
+            echo "📝 Setting Supabase URL..."
             sed -i "s|SUPABASE_URL=.*|SUPABASE_URL=${{ secrets.SUPABASE_URL }}|g" .env
           fi
+          
           if [ ! -z "${{ secrets.SUPABASE_KEY }}" ]; then
+            echo "📝 Setting Supabase key..."
             sed -i "s|SUPABASE_KEY=.*|SUPABASE_KEY=${{ secrets.SUPABASE_KEY }}|g" .env
+          fi
+          
+          # Show the final .env file (without sensitive data)
+          echo "📋 Environment file contents (sanitized):"
+          grep -v -E "(SECRET|KEY|PASSWORD)" .env || true
+          
+          # Test MongoDB URI format
+          if [ ! -z "${{ secrets.MONGO_URI }}" ]; then
+            echo "🔍 Testing MongoDB URI format..."
+            echo "URI length: $(echo "${{ secrets.MONGO_URI }}" | wc -c)"
+            echo "URI starts with mongodb: $(echo "${{ secrets.MONGO_URI }}" | grep -q "^mongodb" && echo "yes" || echo "no")"
           fi
           
           # Pull latest Docker image
@@ -185,6 +210,18 @@ jobs:
           echo "⏳ Waiting for application to start..."
           sleep 30
           
+          # Check container status
+          echo "🔍 Checking container status..."
+          docker compose ps
+          
+          # Check if containers are running
+          if ! docker compose ps | grep -q "Up"; then
+            echo "❌ Containers are not running!"
+            echo "📋 Container logs:"
+            docker compose logs
+            exit 1
+          fi
+          
           # Verify deployment (skip SSL verification for self-signed cert)
           echo "🏥 Performing health check..."
           if curl -k -f https://codecognition.ekowenu.site/health; then
@@ -192,11 +229,12 @@ jobs:
             echo "🌐 Application is running at: https://codecognition.ekowenu.site"
             echo "📚 API docs: https://codecognition.ekowenu.site/docs"
           else
-            echo "❌ Deployment failed!"
+            echo "❌ Health check failed!"
             echo "📋 Checking container logs..."
             docker compose logs
+            echo "🔍 Checking if port 8081 is accessible..."
+            curl -v http://localhost:8081/health || echo "Port 8081 not accessible"
             exit 1
           fi
 
-          # Restart your existing app
-          docker-compose up -d 
+ 
