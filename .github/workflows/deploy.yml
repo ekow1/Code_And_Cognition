@@ -103,12 +103,9 @@ jobs:
         username: ${{ secrets.EC2_USERNAME }}
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
-          # Install Docker Compose if not installed
-          if ! command -v docker-compose &> /dev/null; then
-            echo "📦 Installing Docker Compose..."
-            sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-            sudo chmod +x /usr/local/bin/docker-compose
-          fi
+          # Check Docker Compose version
+          echo "🐳 Docker Compose version:"
+          docker compose version
           
           # Create application directory if it doesn't exist
           sudo mkdir -p /opt/codecognition-app
@@ -170,15 +167,15 @@ jobs:
           
           # Pull latest Docker image
           echo "🐳 Pulling latest Docker image..."
-          docker-compose pull
+          docker compose pull
           
           # Stop and remove old containers
           echo "🛑 Stopping old containers..."
-          docker-compose down
+          docker compose down
           
           # Start new containers
           echo "🚀 Starting new containers..."
-          docker-compose up -d
+          docker compose up -d
           
           # Clean up old images
           echo "🧹 Cleaning up old images..."
@@ -197,7 +194,7 @@ jobs:
           else
             echo "❌ Deployment failed!"
             echo "📋 Checking container logs..."
-            docker-compose logs
+            docker compose logs
             exit 1
           fi
 
