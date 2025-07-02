@@ -3,7 +3,7 @@ version: '3.8'
 services:
   app:
     build: .
-    container_name: fastapi-app
+    container_name: fastapi-app-codecognition
     restart: unless-stopped
     environment:
       - MONGO_URI=${MONGO_URI}
@@ -19,12 +19,12 @@ services:
 
   nginx:
     image: nginx:alpine
-    container_name: nginx-proxy
+    container_name: nginx-proxy-codecognition
     ports:
-      - "80:80"
-      - "443:443"
+      - "8080:80"
+      - "8443:443"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/nginx-subdomain.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
       - nginx_logs:/var/log/nginx
     depends_on:

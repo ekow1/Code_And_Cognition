@@ -105,31 +105,85 @@ jobs:
         username: ${{ secrets.EC2_USERNAME }}
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
-          # Navigate to application directory
-          cd /opt/fastapi-app
+          # Create application directory if it doesn't exist
+          sudo mkdir -p /opt/codecognition-app
+          sudo chown $USER:$USER /opt/codecognition-app
+          cd /opt/codecognition-app
           
-          # Pull latest changes
-          git pull origin main
+          # Check if repository exists, if not clone it
+          if [ ! -d ".git" ]; then
+            echo "📁 Cloning repository..."
+            git clone https://github.com/${{ github.repository }}.git .
+          else
+            echo "📁 Pulling latest changes..."
+            git pull origin main
+          fi
+          
+          # Create SSL directory if it doesn't exist
+          mkdir -p nginx/ssl
+          
+          # Check if SSL certificate exists, if not create self-signed
+          if [ ! -f "nginx/ssl/cert.pem" ]; then
+            echo "🔒 Creating self-signed SSL certificate..."
+            sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+              -keyout nginx/ssl/key.pem \
+              -out nginx/ssl/cert.pem \
+              -subj "/C=US/ST=State/L=City/O=Organization/CN=codecognition.ekowenu.site"
+            sudo chown $USER:$USER nginx/ssl/*
+          fi
+          
+          # Create .env file if it doesn't exist
+          if [ ! -f ".env" ]; then
+            echo "⚙️ Creating environment file..."
+            cp env.example .env
+          fi
+          
+          # Update .env with GitHub secrets if they exist
+          if [ ! -z "${{ secrets.MONGO_URI }}" ]; then
+            sed -i "s|MONGO_URI=.*|MONGO_URI=${{ secrets.MONGO_URI }}|g" .env
+          fi
+          if [ ! -z "${{ secrets.MONGO_DB }}" ]; then
+            sed -i "s|MONGO_DB=.*|MONGO_DB=${{ secrets.MONGO_DB }}|g" .env
+          fi
+          if [ ! -z "${{ secrets.JWT_SECRET_KEY }}" ]; then
+            sed -i "s|JWT_SECRET_KEY=.*|JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}|g" .env
+          fi
+          if [ ! -z "${{ secrets.SUPABASE_URL }}" ]; then
+            sed -i "s|SUPABASE_URL=.*|SUPABASE_URL=${{ secrets.SUPABASE_URL }}|g" .env
+          fi
+          if [ ! -z "${{ secrets.SUPABASE_KEY }}" ]; then
+            sed -i "s|SUPABASE_KEY=.*|SUPABASE_KEY=${{ secrets.SUPABASE_KEY }}|g" .env
+          fi
           
           # Pull latest Docker image
+          echo "🐳 Pulling latest Docker image..."
           docker-compose pull
           
           # Stop and remove old containers
+          echo "🛑 Stopping old containers..."
           docker-compose down
           
           # Start new containers
+          echo "🚀 Starting new containers..."
           docker-compose up -d
           
           # Clean up old images
+          echo "🧹 Cleaning up old images..."
           docker image prune -f
           
           # Wait for health check
+          echo "⏳ Waiting for application to start..."
           sleep 30
           
           # Verify deployment
-          if curl -f https://${{ secrets.EC2_HOST }}/health; then
+          echo "🏥 Performing health check..."
+          if curl -f https://codecognition.ekowenu.site/health; then
             echo "✅ Deployment successful!"
+            echo "🌐 Application is running at: https://codecognition.ekowenu.site"
+            echo "📚 API docs: https://codecognition.ekowenu.site/docs"
           else
             echo "❌ Deployment failed!"
+            echo "📋 Checking container logs..."
+            docker-compose logs
             exit 1
           fi 

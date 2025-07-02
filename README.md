@@ -81,9 +81,11 @@ mkdir -p nginx/ssl
 sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -keyout nginx/ssl/key.pem \
   -out nginx/ssl/cert.pem \
-  -subj "/C=US/ST=State/L=City/O=Organization/CN=your-domain.com"
+  -subj "/C=US/ST=State/L=City/O=Organization/CN=codecognition.ekowenu.site"
 
-# For production, use Let's Encrypt or your SSL provider
+# For production, use Let's Encrypt
+sudo apt install certbot
+sudo certbot certonly --standalone -d codecognition.ekowenu.site
 ```
 
 ## 🔧 GitHub Secrets Configuration
@@ -186,8 +188,8 @@ For production SSL certificates:
 
 2. **Update Nginx configuration** to use Let's Encrypt certificates:
    ```nginx
-   ssl_certificate /etc/letsencrypt/live/your-domain.com/fullchain.pem;
-   ssl_certificate_key /etc/letsencrypt/live/your-domain.com/privkey.pem;
+   ssl_certificate /etc/letsencrypt/live/codecognition.ekowenu.site/fullchain.pem;
+   ssl_certificate_key /etc/letsencrypt/live/codecognition.ekowenu.site/privkey.pem;
    ```
 
 ## 🛠️ Troubleshooting
@@ -222,7 +224,7 @@ docker network inspect mongdb_app-network
 openssl x509 -in nginx/ssl/cert.pem -text -noout
 
 # Test SSL connection
-curl -k https://your-domain.com/health
+curl -k https://codecognition.ekowenu.site/health
 ```
 
 ### Debug Commands
@@ -239,7 +241,7 @@ docker exec fastapi-app env
 
 # Test API endpoints
 curl http://localhost:8000/health
-curl https://your-domain.com/health
+curl https://codecognition.ekowenu.site/health
 ```
 
 ## 📈 Scaling
@@ -291,9 +293,9 @@ sudo apt install docker-ce docker-ce-cli containerd.io
 
 ## 📚 API Documentation
 
-- **Swagger UI**: `https://your-domain.com/docs`
-- **ReDoc**: `https://your-domain.com/redoc`
-- **Health Check**: `https://your-domain.com/health`
+- **Swagger UI**: `https://codecognition.ekowenu.site/docs`
+- **ReDoc**: `https://codecognition.ekowenu.site/redoc`
+- **Health Check**: `https://codecognition.ekowenu.site/health`
 
 ## 🤝 Support
 
