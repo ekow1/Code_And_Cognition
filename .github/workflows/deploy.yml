@@ -23,10 +23,6 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-      nginx:
-        ports:
-          - "8080:80"
-          - "8443:443"
 
     steps:
     - uses: actions/checkout@v4
@@ -204,19 +200,6 @@ jobs:
             docker-compose logs
             exit 1
           fi
-
-          # Set up Nginx
-          echo "🔧 Setting up Nginx..."
-          sudo ln -s /etc/nginx/sites-available/both-apps /etc/nginx/sites-enabled/
-          sudo nginx -t
-          sudo systemctl reload nginx
-
-          # Find your existing app
-          cd /opt/fast-api  # or wherever it is
-          docker-compose down
-
-          # Get SSL certificate
-          sudo certbot certonly --standalone -d codecognition.ekowenu.site
 
           # Restart your existing app
           docker-compose up -d 
