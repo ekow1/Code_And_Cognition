@@ -25,7 +25,7 @@ services:
       - "8443:443"
     volumes:
       - ./nginx/nginx-subdomain.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
       - nginx_logs:/var/log/nginx
     depends_on:
       - app

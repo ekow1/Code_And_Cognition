@@ -127,14 +127,18 @@ jobs:
           # Create SSL directory if it doesn't exist
           mkdir -p nginx/ssl
           
-          # Check if SSL certificate exists, if not create self-signed
-          if [ ! -f "nginx/ssl/cert.pem" ]; then
-            echo "🔒 Creating self-signed SSL certificate..."
+          # Check if Let's Encrypt certificate exists, if not create self-signed
+          if [ ! -f "/etc/letsencrypt/live/codecognition.ekowenu.site/fullchain.pem" ]; then
+            echo "🔒 Creating self-signed SSL certificate for initial setup..."
+            mkdir -p nginx/ssl
             sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
               -keyout nginx/ssl/key.pem \
               -out nginx/ssl/cert.pem \
               -subj "/C=US/ST=State/L=City/O=Organization/CN=codecognition.ekowenu.site"
             sudo chown $USER:$USER nginx/ssl/*
+            echo "⚠️ Using self-signed certificate. For production, run: sudo certbot certonly --standalone -d codecognition.ekowenu.site"
+          else
+            echo "✅ Let's Encrypt certificate found!"
           fi
           
           # Create .env file if it doesn't exist
