@@ -103,6 +103,13 @@ jobs:
         username: ${{ secrets.EC2_USERNAME }}
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
+          # Install Docker Compose if not installed
+          if ! command -v docker-compose &> /dev/null; then
+            echo "📦 Installing Docker Compose..."
+            sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
+          fi
+          
           # Create application directory if it doesn't exist
           sudo mkdir -p /opt/codecognition-app
           sudo chown $USER:$USER /opt/codecognition-app
@@ -145,6 +152,10 @@ jobs:
           fi
           if [ ! -z "${{ secrets.JWT_SECRET_KEY }}" ]; then
             sed -i "s|JWT_SECRET_KEY=.*|JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}|g" .env
+          else
+            # Generate a default JWT secret if not provided
+            echo "🔑 Generating default JWT secret..."
+            sed -i "s|JWT_SECRET_KEY=.*|JWT_SECRET_KEY=default-secret-key-change-in-production-$(date +%s)|g" .env
           fi
           if [ ! -z "${{ secrets.SUPABASE_URL }}" ]; then
             sed -i "s|SUPABASE_URL=.*|SUPABASE_URL=${{ secrets.SUPABASE_URL }}|g" .env
@@ -173,9 +184,9 @@ jobs:
           echo "⏳ Waiting for application to start..."
           sleep 30
           
-          # Verify deployment
+          # Verify deployment (skip SSL verification for self-signed cert)
           echo "🏥 Performing health check..."
-          if curl -f https://codecognition.ekowenu.site/health; then
+          if curl -k -f https://codecognition.ekowenu.site/health; then
             echo "✅ Deployment successful!"
             echo "🌐 Application is running at: https://codecognition.ekowenu.site"
             echo "📚 API docs: https://codecognition.ekowenu.site/docs"
