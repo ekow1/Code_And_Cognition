@@ -1,0 +1,19 @@
+[project]
+name = "mongdb"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "bcrypt==4.0.1",
+    "dotenv>=0.9.9",
+    "fastapi>=0.115.14",
+    "motor>=3.7.1",
+    "passlib[bcrypt]>=1.7.4",
+    "pydantic[email,standard]>=2.11.7",
+    "pyjwt>=2.10.1",
+    "python-multipart>=0.0.20",
+    "supabase>=2.16.0",
+    "uuid>=1.30",
+    "uvicorn>=0.35.0",
+]
