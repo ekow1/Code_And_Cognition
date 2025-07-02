@@ -21,8 +21,8 @@ services:
     image: nginx:alpine
     container_name: nginx-proxy-codecognition
     ports:
-      - "8080:80"
-      - "8443:443"
+      - "8081:80"
+      - "8444:443"
     volumes:
       - ./nginx/nginx-subdomain.conf:/etc/nginx/nginx.conf:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
